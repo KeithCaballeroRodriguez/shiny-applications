@@ -154,3 +154,131 @@ tagInsertChild <- function(tag, child, position) {
 (tagInsertChild(p(span("hello")), a(), 2))
 
 
+# Remover Atributos de Tags -----------------------------------------------
+
+tagRemoveAttributes <- function(tag, ...) {
+  attrs <- as.character(list(...))
+  for (i in seq_along(attrs)) {
+    tag$attribs[[ attrs[i] ]] <- NULL
+  }
+  tag
+}
+
+(myTag <- div(class = "test", id = "coucou", "Hello"))
+(tagRemoveAttributes(myTag, "class", "id"))
+
+
+# O crear tags personalizados ---------------------------------------------
+
+my_button <- function(color = NULL) {
+  tags$button( 
+    style = if (!is.null(color)) paste("color:", color),
+    p("Hello")
+  )
+}
+
+my_button("blue")
+
+my_button()
+
+
+# El uso del operador pipe %>% --------------------------------------------
+
+(myTag <- div(class = "cl", h1("Hello")) %>% 
+  tagAppendAttributes(id = "myid") %>%
+  tagAppendChild(p("some extra text here!")))
+
+
+
+rpgSelect_mal <- function(inputId, label, choices, selected = NULL,
+                      multiple = FALSE, size = NULL) {
+  shiny::selectInput(
+    inputId,
+    label,
+    choices,
+    selected,
+    multiple,
+    selectize = FALSE,
+    width = NULL,
+    size
+  )
+}
+
+rpgSelect_mal(
+  "variable", 
+  "Variable:",
+  c("Cylinders" = "cyl",
+    "Transmission" = "am",
+    "Gears" = "gear")
+)
+
+
+
+rpgSelect_bien <- function(inputId, label, choices, selected = NULL,
+                      multiple = FALSE, size = NULL) {
+  selectTag <- shiny::selectInput(
+    inputId,
+    label,
+    choices,
+    selected,
+    multiple,
+    selectize = FALSE,
+    width = NULL,
+    size
+  )
+  
+  # Modify tag
+  selectTag$attribs$class <- NULL
+  # Clean extra label class
+  selectTag$children[[1]]$attribs$class <- NULL
+  # Remove extra outer div
+  selectTag$children[[2]] <- selectTag$children[[2]]$children[[1]]
+  
+  # Add good class for rppgui binding
+  selectTag$children[[2]]$attribs$class <- if (is.null(size)) {
+    "rpgui-dropdown"
+  } else {
+    "rpgui-list"
+  }
+  
+  selectTag
+}
+
+
+rpgSelect_bien(
+  "variable", 
+  "Variable:",
+  c("Cylinders" = "cyl",
+    "Transmission" = "am",
+    "Gears" = "gear")
+)
+
+
+
+
+library(shiny)
+
+ui <- fluidPage(
+  rpgSelect_mal(
+    "variable", 
+    "Variable:",
+    c("Cylinders" = "cyl",
+      "Transmission" = "am",
+      "Gears" = "gear")
+  ),
+  rpgSelect_bien(
+    "variable", 
+    "Variable:",
+    c("Cylinders" = "cyl",
+      "Transmission" = "am",
+      "Gears" = "gear")
+  )
+  
+  
+)
+
+server <- function(input, output, session) {}
+
+shinyApp(ui, server)
+
+
